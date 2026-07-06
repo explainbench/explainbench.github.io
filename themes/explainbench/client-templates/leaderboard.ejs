@@ -1,0 +1,50 @@
+<div class="leaderboard-toolbar">
+  <div class="metric-buttons" role="tablist" aria-label="Leaderboard metric">
+    <% for (const metric of metrics) { %>
+      <button class="metric-button <%= metric.key === activeMetric?.key ? 'is-active' : '' %>" type="button" data-metric="<%= metric.key %>">
+        <%- icon(metric.icon) %><span><%= metric.label %></span>
+      </button>
+    <% } %>
+  </div>
+  <span class="asset-badge"><%- icon('database') %> <%= leaderboard.datasetLabel %></span>
+</div>
+<div class="leaderboard-table-wrap">
+  <table class="leaderboard-table">
+    <thead>
+      <tr>
+        <th scope="col">Rank</th>
+        <th scope="col">Agent</th>
+        <% for (const metric of metrics) { %><th scope="col"><%= metric.shortLabel %></th><% } %>
+        <th scope="col">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% agents.forEach((agent, index) => { %>
+        <tr>
+          <td><span class="rank"><%= index + 1 %></span></td>
+          <td class="agent-cell">
+            <span class="agent-name"><%= agent.agent %></span>
+            <span class="agent-note"><%= agent.framework %></span>
+          </td>
+          <% for (const metric of metrics) { const value = Number(agent[metric.key] ?? 0); %>
+            <td class="score-cell">
+              <span class="score-number"><%= formatScore(value, metric.format) %></span>
+              <span class="score-bar" aria-hidden="true"><span style="--score: <%= Math.max(0, Math.min(100, value * 100)) %>%"></span></span>
+            </td>
+          <% } %>
+          <td><%= agent.note %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<div class="leaderboard-notes">
+  <article class="card content-card">
+    <h3><%= leaderboard.methodology.title %></h3>
+    <p><%= leaderboard.methodology.body %></p>
+  </article>
+  <article class="card content-card">
+    <h3><%= leaderboard.updatePolicy.title %></h3>
+    <p><%= leaderboard.updatePolicy.body %></p>
+  </article>
+</div>

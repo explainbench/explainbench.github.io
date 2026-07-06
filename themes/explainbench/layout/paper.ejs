@@ -1,0 +1,59 @@
+<section class="band">
+  <div class="inner">
+    <%- partial('_partial/section-head', { block: page }) %>
+    <div class="paper-layout">
+      <article class="card paper-main">
+        <h2 class="paper-title"><%- md_inline(page.paperTitle || page.title) %></h2>
+        <% if (page.authors?.length) { %>
+          <ul class="author-list">
+            <% for (const author of page.authors) { %>
+              <li><%- md_inline(author) %></li>
+            <% } %>
+          </ul>
+        <% } %>
+        <% if (page.content) { %><div class="paper-prose prose"><%- page.content %></div><% } %>
+        <% if (page.contributions?.length) { %>
+          <div class="contribution-grid">
+            <% for (const item of page.contributions) { %>
+              <div class="contribution-item">
+                <h3><%- md_inline(item.title) %></h3>
+                <p><%- md_inline(item.body) %></p>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+        <% if (page.bibtex) { %>
+          <div class="bibtex-wrap">
+            <button class="copy-button" type="button" data-copy-target="bibtex" aria-label="Copy BibTeX">
+              <%- icon('copy') %>
+            </button>
+            <pre class="code-block" id="bibtex"><code><%= page.bibtex %></code></pre>
+          </div>
+        <% } %>
+      </article>
+      <aside class="card paper-meta">
+        <% if (page.metaHeading) { %><h3><%- md_inline(page.metaHeading) %></h3><% } %>
+        <% if (page.metadata?.length) { %>
+          <ul class="meta-list">
+            <% for (const item of page.metadata) { %>
+              <li>
+                <span class="meta-key"><%- md_inline(item.key) %></span>
+                <span class="meta-value"><%- md_inline(item.value) %></span>
+              </li>
+            <% } %>
+          </ul>
+        <% } %>
+        <% if (page.linksHeading) { %><h3 class="meta-links-heading"><%- md_inline(page.linksHeading) %></h3><% } %>
+        <% if (page.links?.length) { %>
+          <ul class="link-list">
+            <% for (const link of page.links) { %>
+              <li>
+                <a href="<%= link.href %>"><%- icon(link.icon) %><span><%- md_inline(link.label) %></span></a>
+              </li>
+            <% } %>
+          </ul>
+        <% } %>
+      </aside>
+    </div>
+  </div>
+</section>

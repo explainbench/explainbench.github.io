@@ -1,0 +1,48 @@
+<div class="demo-layout">
+  <aside class="card demo-panel">
+    <h3><%= demo.panelTitle %></h3>
+    <p><%= demo.panelBody %></p>
+    <select class="demo-select" data-demo-select aria-label="Select demo case">
+      <% demo.examples.forEach((example, index) => { %>
+        <option value="<%= index %>" <%= index === selectedIndex ? 'selected' : '' %>><%= example.name %></option>
+      <% }) %>
+    </select>
+    <div class="demo-metrics">
+      <% for (const metric of selected.metrics || []) { %>
+        <div class="demo-metric">
+          <span class="stat-value"><%= metric.value %></span>
+          <span class="stat-label"><%= metric.label %></span>
+        </div>
+      <% } %>
+    </div>
+  </aside>
+  <div class="demo-stage">
+    <article class="card demo-panel">
+      <h3><%= selected.explanationTitle %></h3>
+      <p><%= selected.explanation %></p>
+    </article>
+    <pre class="code-block"><code><%= selected.context %></code></pre>
+    <% (selected.questions || []).forEach((question, questionIndex) => { %>
+      <article class="card question-card" data-question="<%= questionIndex %>">
+        <div class="question-topline">
+          <span class="question-type"><%= question.type %></span>
+          <span class="asset-badge"><%- icon('check-circle-2') %> <%= question.scoring %></span>
+        </div>
+        <h3><%= question.prompt %></h3>
+        <div class="choice-list">
+          <% (question.choices || []).forEach((choice, index) => { %>
+            <button class="choice-button" type="button" data-choice="<%= index %>" data-answer="<%= question.answer %>">
+              <strong><%= choice.label %>.</strong>
+              <span><%= choice.text %></span>
+            </button>
+          <% }) %>
+        </div>
+        <div class="status-line" data-status></div>
+      </article>
+    <% }) %>
+    <article class="card demo-panel">
+      <h3><%= demo.quickstartTitle %></h3>
+      <pre class="code-block"><code><%= demo.quickstart %></code></pre>
+    </article>
+  </div>
+</div>

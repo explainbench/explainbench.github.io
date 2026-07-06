@@ -1,0 +1,18 @@
+<% const isNested = Boolean(typeof nested !== 'undefined' && nested); %>
+<% if (!isNested) { %>
+  <section class="band">
+    <div class="inner">
+<% } %>
+<%- partial('_partial/section-head', { block }) %>
+<div class="flow">
+  <% for (const item of block.items || []) { %>
+    <article class="card flow-step">
+      <h3><%- md_inline(item.title) %></h3>
+      <p><%- md_inline(item.body) %></p>
+    </article>
+  <% } %>
+</div>
+<% if (!isNested) { %>
+    </div>
+  </section>
+<% } %>

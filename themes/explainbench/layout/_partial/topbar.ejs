@@ -1,0 +1,33 @@
+<%
+  const brand = config.brand || {};
+  const menu = config.menu || {};
+  const menuIcons = config.menu_icons || {};
+  const currentPath = page.path === 'index.html' ? '/' : `/${String(page.path || '').replace(/index\.html$/, '')}`;
+  const normalizedCurrent = currentPath.replace(/\/+$/, '/') || '/';
+%>
+<header class="topbar" data-topbar>
+  <div class="topbar-inner">
+    <a class="brand" href="<%- url_for('/') %>" aria-label="<%= brand.label || config.title %> home">
+      <span class="brand-mark" aria-hidden="true"><%- md_inline(brand.mark || 'EB') %></span>
+      <span class="brand-text"><%- md_inline(brand.label || config.title) %></span>
+    </a>
+    <div class="topbar-actions">
+      <nav class="tabs" aria-label="Project sections" data-nav>
+        <% for (const [label, href] of Object.entries(menu)) { %>
+          <%
+            const target = String(href).replace(/\/+$/, '/') || '/';
+            const active = target === normalizedCurrent;
+          %>
+          <a class="tab-button <%= active ? 'is-active' : '' %>" href="<%- url_for(href) %>" aria-label="<%= label %>" title="<%= label %>" <%- active ? 'aria-current="page"' : '' %>>
+            <%- icon(menuIcons[label] || 'circle') %>
+            <span><%- md_inline(label) %></span>
+          </a>
+        <% } %>
+      </nav>
+      <button class="theme-toggle icon-button" type="button" data-theme-toggle aria-label="Switch theme">
+        <span class="theme-toggle-icon" data-theme-icon><%- icon('sun-moon') %></span>
+        <span class="theme-toggle-label" data-theme-label>Theme</span>
+      </button>
+    </div>
+  </div>
+</header>

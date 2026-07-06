@@ -1,0 +1,16 @@
+<% const isNested = Boolean(typeof nested !== 'undefined' && nested); %>
+<% if (!isNested) { %>
+  <section class="band <%= block.compact ? 'compact-band' : '' %>">
+    <div class="inner">
+<% } else { %>
+  <div class="nested-section">
+<% } %>
+<%- partial('_partial/section-head', { block }) %>
+<%- content_card(block.content ? md_block(block.content) : '') %>
+<%- partial('_partial/render-blocks', { blocks: block.children || [], nested: true }) %>
+<% if (!isNested) { %>
+    </div>
+  </section>
+<% } else { %>
+  </div>
+<% } %>

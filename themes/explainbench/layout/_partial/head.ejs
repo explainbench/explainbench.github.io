@@ -1,0 +1,25 @@
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="<%= config.description %>" />
+  <title><%= page.title ? `${page.title} | ${config.title}` : config.title %></title>
+  <script>
+    (() => {
+      const key = 'explainbench-theme';
+      const saved = (() => {
+        try {
+          return localStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      })();
+      const manual = saved === 'light' || saved === 'dark' ? saved : null;
+      const system = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = manual || system;
+      document.documentElement.dataset.themeSource = manual ? 'manual' : 'system';
+    })();
+  </script>
+  <link rel="icon" href="<%- url_for('/assets/img/favicon.svg') %>" type="image/svg+xml" />
+  <link rel="preload" as="image" href="<%- url_for('/assets/img/explainbench-hero.png') %>" />
+  <link rel="stylesheet" href="<%- url_for('/assets/css/styles.css') %>" />
+</head>

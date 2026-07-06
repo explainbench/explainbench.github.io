@@ -1,0 +1,3 @@
+<%- partial('_components/hero', { block: { hero: page.hero, data: 'leaderboard' } }) %>
+<%- content_section(page.content, { compact: true }) %>
+<%- partial('_partial/render-blocks', { blocks: page.blocks || [] }) %>

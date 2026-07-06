@@ -1,0 +1,9 @@
+<div class="asset-error" role="status">
+  <strong><%= title || 'Content unavailable.' %></strong>
+  <% if (message) { %><p><%= message %></p><% } %>
+  <% if (errors?.length) { %>
+    <ul>
+      <% for (const error of errors) { %><li><%= error %></li><% } %>
+    </ul>
+  <% } %>
+</div>

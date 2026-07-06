@@ -1,0 +1,44 @@
+<% const hero = block.hero || {}; %>
+<section class="hero" data-component="hero" data-data-key="<%= block.data || '' %>">
+  <div class="hero-inner">
+    <div>
+      <% if (hero.eyebrow) { %><span class="kicker"><%- md_inline(hero.eyebrow) %></span><% } %>
+      <h1><%- md_inline(hero.title) %></h1>
+      <% if (hero.subtitle) { %><p class="hero-lede"><%- md_inline(hero.subtitle) %></p><% } %>
+      <% if (hero.actions?.length) { %>
+        <div class="hero-actions">
+          <% for (const action of hero.actions) { %>
+            <a class="action-link <%= action.variant || '' %>" href="<%- url_for(action.href) %>">
+              <%- icon(action.icon) %><span><%- md_inline(action.label) %></span>
+            </a>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+    <aside class="terminal-card" aria-label="ExplainBench static preview">
+      <div class="terminal-top">
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+      </div>
+      <div class="terminal-body">
+        <% for (const line of hero.terminal || []) { %>
+          <div class="prompt-line">
+            <span class="symbol">$</span>
+            <span data-best-agent-template><%= line %></span>
+          </div>
+        <% } %>
+        <% if (hero.stats?.length) { %>
+          <div class="hero-stats">
+            <% for (const stat of hero.stats) { %>
+              <div class="hero-stat">
+                <span class="stat-value"><%= stat.value %></span>
+                <span class="stat-label"><%- md_inline(stat.label) %></span>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    </aside>
+  </div>
+</section>

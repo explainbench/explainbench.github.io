@@ -1,0 +1,7 @@
+<section class="band">
+  <div class="inner">
+    <%- partial('_partial/section-head', { block: page }) %>
+    <%- content_card(page.content) %>
+  </div>
+</section>
+<%- partial('_partial/render-blocks', { blocks: page.blocks || [] }) %>

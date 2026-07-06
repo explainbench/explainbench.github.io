@@ -1,0 +1,15 @@
+<% const isNested = Boolean(typeof nested !== 'undefined' && nested); %>
+<% if (!isNested) { %>
+  <section class="band compact-band">
+    <div class="inner">
+<% } %>
+<article class="card content-card markdown-card prose">
+  <% if (block.eyebrow) { %><span class="eyebrow"><%- md_inline(block.eyebrow) %></span><% } %>
+  <% if (block.title) { %><h2><%- md_inline(block.title) %></h2><% } %>
+  <% if (block.body) { %><%- md_block(block.body) %><% } %>
+  <%- partial('_partial/render-blocks', { blocks: block.children || [], nested: true }) %>
+</article>
+<% if (!isNested) { %>
+    </div>
+  </section>
+<% } %>

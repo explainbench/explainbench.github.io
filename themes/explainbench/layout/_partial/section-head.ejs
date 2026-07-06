@@ -1,0 +1,13 @@
+<% if (block.heading || heading) { %>
+  <div class="section-head">
+    <div>
+      <% if (block.eyebrow || eyebrow) { %>
+        <span class="eyebrow"><%- md_inline(block.eyebrow || eyebrow) %></span>
+      <% } %>
+      <h2><%- md_inline(block.heading || heading) %></h2>
+    </div>
+    <% if (block.subheading || subheading) { %>
+      <p><%- md_inline(block.subheading || subheading) %></p>
+    <% } %>
+  </div>
+<% } %>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="<%= config.language || 'en' %>">
+  <%- partial('_partial/head') %>
+  <body>
+    <div class="site-shell">
+      <%- partial('_partial/topbar') %>
+      <main id="app" class="app">
+        <%- body %>
+      </main>
+      <%- partial('_partial/footer') %>
+    </div>
+    <noscript>
+      <div class="noscript">
+        This site loads leaderboard and demo content from static JSON assets. Enable JavaScript to view the interactive sections.
+      </div>
+    </noscript>
+    <%
+      const configuredDataFiles = config.data_files || {};
+      const dataFiles = {};
+      for (const [key, value] of Object.entries(configuredDataFiles)) {
+        dataFiles[key] = url_for(value);
+      }
+    %>
+    <script id="site-config" type="application/json"><%- script_json({ dataFiles }) %></script>
+    <script src="<%- url_for('/assets/js/main.js') %>" defer></script>
+  </body>
+</html>

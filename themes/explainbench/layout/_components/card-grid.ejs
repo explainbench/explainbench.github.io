@@ -1,0 +1,19 @@
+<% const isNested = Boolean(typeof nested !== 'undefined' && nested); %>
+<% if (!isNested) { %>
+  <section class="band">
+    <div class="inner">
+<% } %>
+<%- partial('_partial/section-head', { block }) %>
+<div class="grid <%= grid_class(block.columns) %>">
+  <% for (const item of block.items || []) { %>
+    <article class="card content-card axis-card">
+      <% if (item.label) { %><span class="axis-label"><%- md_inline(item.label) %></span><% } %>
+      <h3><%- md_inline(item.title) %></h3>
+      <p><%- md_inline(item.body) %></p>
+    </article>
+  <% } %>
+</div>
+<% if (!isNested) { %>
+    </div>
+  </section>
+<% } %>

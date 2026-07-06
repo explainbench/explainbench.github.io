@@ -1,0 +1,92 @@
+{
+  "panelTitle": "Loaded demo cases",
+  "panelBody": "Choose a preloaded benchmark case. The UI simulates how ExplainBench asks answerable questions from a patch explanation.",
+  "quickstartTitle": "Static quickstart placeholder",
+  "quickstart": "git clone https://github.com/your-org/explainbench.git\ncd explainbench\npython -m explainbench.evaluate \\\n  --trajectory data/agent_runs/example.jsonl \\\n  --questions data/questions/example.json \\\n  --out results/example_scores.json",
+  "examples": [
+    {
+      "name": "Astropy table column behavior",
+      "explanationTitle": "Agent explanation excerpt",
+      "explanation": "The patch updates table column conversion so structured array data preserves the intended column representation. It changes the conversion path rather than only adjusting downstream assertions.",
+      "context": "Masked property-based test:\n\n@given(array=structured_arrays())\ndef test_column_conversion(array):\n    table = Table([array], names=['col1'])\n    col = table['col1']\n    assert [[MASKED]]",
+      "metrics": [
+        {
+          "value": "E2E",
+          "label": "question scope"
+        },
+        {
+          "value": "1 / 1",
+          "label": "demo answerable"
+        }
+      ],
+      "questions": [
+        {
+          "type": "End-to-end intent",
+          "prompt": "Based on the explanation, what should replace [[MASKED]]?",
+          "scoring": "objective answer",
+          "answer": "B",
+          "choices": [
+            {
+              "label": "A",
+              "text": "hasattr(col, 'mask')"
+            },
+            {
+              "label": "B",
+              "text": "isinstance(col, Column)"
+            },
+            {
+              "label": "C",
+              "text": "isinstance(col, NdarrayMixin)"
+            },
+            {
+              "label": "D",
+              "text": "Explanation insufficient to answer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Patch effect audit",
+      "explanationTitle": "Agent explanation excerpt",
+      "explanation": "The submitted patch claims the duplicate-code checker is disabled when min-similarity-lines is zero, but execution evidence can reveal whether the modified path is actually covered.",
+      "context": "Effect question context:\n\nBefore patch: reproducing test fails.\nAfter patch: reproducing test still fails because the modified function is not executed.\n\nQuestion: What happens when running the test before and after applying the patch?",
+      "metrics": [
+        {
+          "value": "Effect",
+          "label": "question family"
+        },
+        {
+          "value": "audit",
+          "label": "demo mode"
+        }
+      ],
+      "questions": [
+        {
+          "type": "End-to-end effect",
+          "prompt": "Which answer is best supported by the execution evidence?",
+          "scoring": "objective answer",
+          "answer": "C",
+          "choices": [
+            {
+              "label": "A",
+              "text": "The test passes after applying the patch."
+            },
+            {
+              "label": "B",
+              "text": "The patch changes the observed return value."
+            },
+            {
+              "label": "C",
+              "text": "The test still fails because the patch has no observed effect."
+            },
+            {
+              "label": "D",
+              "text": "Explanation insufficient to answer."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

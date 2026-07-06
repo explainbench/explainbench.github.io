@@ -1,0 +1,12 @@
+<% const isNested = Boolean(typeof nested !== 'undefined' && nested); %>
+<% if (!isNested) { %>
+  <section class="band compact-band">
+    <div class="inner">
+<% } %>
+<div data-component="leaderboard" data-data-key="<%= block.data %>">
+  <div class="component-loading">Loading leaderboard...</div>
+</div>
+<% if (!isNested) { %>
+    </div>
+  </section>
+<% } %>

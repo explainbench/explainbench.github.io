@@ -1,0 +1,17 @@
+<%
+  const isNested = Boolean(typeof nested !== 'undefined' && nested);
+%>
+<% for (const rawBlock of blocks || []) { %>
+  <%
+    const block = rawBlock || {};
+    const template = block.template || block.component || block.layout;
+    if (!template) continue;
+  %>
+  <% if (isNested) { %>
+    <div class="nested-block">
+      <%- partial(`_components/${template}`, { block, nested: true }) %>
+    </div>
+  <% } else { %>
+    <%- partial(`_components/${template}`, { block, nested: false }) %>
+  <% } %>
+<% } %>

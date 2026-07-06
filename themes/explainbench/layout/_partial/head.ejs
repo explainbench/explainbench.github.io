@@ -1,8 +1,34 @@
+<%
+  const metaTitle = page_meta_title(page);
+  const metaDescription = page_meta_description(page);
+  const metaKeywords = page_meta_keywords(page);
+  const canonical = canonical_url(page);
+  const metaImage = page_meta_image(page);
+  const ogType = page.ogType || (page.layout === 'paper' ? 'article' : 'website');
+%>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="<%= config.description %>" />
-  <title><%= page.title ? `${page.title} | ${config.title}` : config.title %></title>
+  <title><%= metaTitle %></title>
+  <meta name="description" content="<%= metaDescription %>" />
+  <% if (metaKeywords) { %><meta name="keywords" content="<%= metaKeywords %>" /><% } %>
+  <meta name="author" content="<%= config.author %>" />
+  <meta name="robots" content="<%= page.robots || 'index,follow' %>" />
+  <meta name="theme-color" content="#071016" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f8fbfa" media="(prefers-color-scheme: light)" />
+  <link rel="canonical" href="<%- canonical %>" />
+  <meta property="og:site_name" content="<%= config.title %>" />
+  <meta property="og:type" content="<%= ogType %>" />
+  <meta property="og:title" content="<%= metaTitle %>" />
+  <meta property="og:description" content="<%= metaDescription %>" />
+  <meta property="og:url" content="<%- canonical %>" />
+  <meta property="og:image" content="<%- metaImage %>" />
+  <meta property="og:image:alt" content="<%= page.imageAlt || `${config.title} project preview` %>" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="<%= metaTitle %>" />
+  <meta name="twitter:description" content="<%= metaDescription %>" />
+  <meta name="twitter:image" content="<%- metaImage %>" />
+  <script type="application/ld+json"><%- script_json(seo_json_ld(page)) %></script>
   <script>
     (() => {
       const key = 'explainbench-theme';

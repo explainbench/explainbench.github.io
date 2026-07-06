@@ -4,6 +4,13 @@ description: ExplainBench project website for evaluating code explanations from 
 author: ExplainBench Authors
 language: en
 timezone: Asia/Singapore
+keywords:
+  - ExplainBench
+  - code explanation evaluation
+  - coding agents
+  - software engineering benchmark
+  - LLM agents
+social_image: /assets/img/explainbench-hero.png
 
 url: https://explainbench.github.io
 root: /

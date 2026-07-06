@@ -15,6 +15,25 @@ function toPosix(value) {
   return value.split(path.sep).join("/");
 }
 
+function xmlEscape(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function siteBaseUrl() {
+  return String(process.env.EXPLAINBENCH_SITE_URL || "").replace(/\/+$/, "");
+}
+
+function pageUrlForHtml(file) {
+  const relative = toPosix(path.relative(publicDir, file));
+  const route = relative === "index.html" ? "/" : `/${relative.replace(/index\.html$/, "")}`;
+  return `${siteBaseUrl()}${route}`;
+}
+
 async function listFiles(dir, extensions) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const files = [];
@@ -146,8 +165,40 @@ async function minifyGeneratedHtml() {
   );
 }
 
+async function writeCrawlerFiles() {
+  const baseUrl = siteBaseUrl();
+  if (!baseUrl) return;
+
+  const htmlFiles = (await listFiles(publicDir, [".html"])).sort();
+  const today = new Date().toISOString().slice(0, 10);
+  const urlEntries = htmlFiles
+    .map((file) => {
+      const loc = pageUrlForHtml(file);
+      const priority = loc.endsWith("/") && loc === `${baseUrl}/` ? "1.0" : "0.8";
+      return [
+        "  <url>",
+        `    <loc>${xmlEscape(loc)}</loc>`,
+        `    <lastmod>${today}</lastmod>`,
+        "    <changefreq>weekly</changefreq>",
+        `    <priority>${priority}</priority>`,
+        "  </url>"
+      ].join("\n");
+    })
+    .join("\n");
+
+  await fs.writeFile(
+    path.join(publicDir, "sitemap.xml"),
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlEntries}\n</urlset>\n`
+  );
+  await fs.writeFile(
+    path.join(publicDir, "robots.txt"),
+    ["User-agent: *", "Allow: /", `Sitemap: ${baseUrl}/sitemap.xml`, ""].join("\n")
+  );
+}
+
 await copyStaticAssets();
 await bundleAssets();
 await minifyGeneratedHtml();
+await writeCrawlerFiles();
 
 console.log(`Post-built ${toPosix(path.relative(rootDir, publicDir))}/`);

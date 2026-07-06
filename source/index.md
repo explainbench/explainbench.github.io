@@ -1,11 +1,20 @@
 ---
 title: ExplainBench
+seoTitle: "ExplainBench | Benchmarking Code Explanation Fidelity"
+description: ExplainBench is a research benchmark for evaluating whether coding-agent explanations are informative, grounded, and faithful to patch behavior.
+keywords:
+  - ExplainBench
+  - code explanations
+  - coding agents
+  - benchmark
+  - explanation fidelity
+image: /assets/img/explainbench-hero.png
 layout: intro
 icon: sparkles
 hero:
-  eyebrow: Accepted paper and benchmark scaffold
+  eyebrow: Research benchmark for code explanations
   title: ExplainBench
-  subtitle: A static project site for evaluating whether coding-agent explanations are informative, grounded, and faithful to patch behavior.
+  subtitle: Evaluate whether coding-agent explanations are informative, grounded in program behavior, and faithful to the patches they describe.
   actions:
     - label: View leaderboard
       href: /leaderboard/
@@ -27,9 +36,9 @@ hero:
       label: evaluated agent frameworks
 blocks:
   - template: card-grid
-    eyebrow: Project intro
-    heading: Explanations become measurable artifacts.
-    subheading: ExplainBench turns natural-language patch explanations into objective multiple-choice QA tasks, so agent explanations can be compared independently from patch success.
+    eyebrow: Evaluation surface
+    heading: Turn explanations into measurable artifacts.
+    subheading: ExplainBench converts natural-language patch explanations into objective QA tasks, so explanation quality can be compared independently from patch success.
     columns: 3
     items:
       - label: Intent
@@ -44,7 +53,7 @@ blocks:
   - template: flow-steps
     eyebrow: Benchmark pipeline
     heading: From patch explanations to comparable scores.
-    subheading: Hexo renders each page from EJS layouts and component partials, while leaderboard rows and demo examples load from JSON assets.
+    subheading: The workflow combines behavioral traces, generated questions, and explanation-only answering to expose when an agent sounds plausible but misses the real patch effect.
     items:
       - title: Collect traces
         body: Gather developer tests, developer patches, agent patches, and final agent explanations.
@@ -56,4 +65,4 @@ blocks:
         body: Compare answers to ground truth and surface explanation gaps for improvement.
 ---
 
-ExplainBench treats explanations as artifacts that can be tested, audited, and compared. Page copy is normal Markdown rendered by Hexo; raw HTML can also be used when a page needs custom markup.
+ExplainBench treats explanations as review artifacts: they should help developers understand intent, evidence, and patch effects without trusting surface-level fluency.

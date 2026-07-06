@@ -1,14 +1,22 @@
 ---
 title: Leaderboard
+seoTitle: "ExplainBench Leaderboard | Code Explanation Quality Scores"
+description: Compare coding agents on explanation quality metrics including overall accuracy, intent understanding, effect grounding, and local/global behavior.
+keywords:
+  - ExplainBench leaderboard
+  - code explanation scores
+  - coding agent benchmark
+  - explanation quality
+image: /assets/img/explainbench-hero.png
 layout: page
 label: Leaderboard
 icon: bar-chart-3
 eyebrow: Benchmark leaderboard
-heading: Rank explanation quality separately from patch efficacy.
-subheading: Rows, metrics, and notes are loaded from `data/leaderboard.json`. Swap that file for the final public leaderboard without changing the page template.
+heading: Rank explanation quality separately from patch success.
+subheading: Compare whether agent explanations preserve intent, describe actual effects, and stay grounded at both local and global levels.
 blocks:
   - template: leaderboard
     data: leaderboard
 ---
 
-The table below is still static GitHub Pages content: metric definitions, scores, and notes come from an editable JSON export, while this introduction lives in Markdown.
+The leaderboard is generated from editable JSON so benchmark releases can update scores without rewriting the page template.

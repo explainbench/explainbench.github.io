@@ -8,6 +8,8 @@ try {
   await hexo.init();
   await hexo.call("clean", {});
   await hexo.call("generate", { bail: true, force: true });
+  process.env.EXPLAINBENCH_SITE_URL = hexo.config.url || "";
+  process.env.EXPLAINBENCH_SITE_ROOT = hexo.config.root || "/";
   await hexo.exit();
   await import("./postbuild.mjs");
 } catch (error) {

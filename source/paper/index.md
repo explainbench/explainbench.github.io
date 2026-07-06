@@ -1,11 +1,19 @@
 ---
 title: "ExplainBench: Evaluating Code Explanations from Agents"
+seoTitle: "ExplainBench Paper | Evaluating Code Explanations from Agents"
+description: Read the ExplainBench paper summary, authors, abstract, citation, and artifact links for the benchmark evaluating coding-agent explanations.
+keywords:
+  - ExplainBench paper
+  - code explanation benchmark
+  - agent explanations
+  - software engineering research
+image: /assets/img/explainbench-hero.png
 layout: paper
 label: Paper
 icon: file-text
 eyebrow: Paper info
-heading: Accepted paper details.
-subheading: Replace the venue, DOI, PDF, artifact, and citation fields here when the camera-ready metadata is final.
+heading: Paper, artifact, and citation.
+subheading: Camera-ready metadata, PDF, and artifact links can be updated here as the public release stabilizes.
 authors:
   - Zhiyuan Pan
   - Sungmin Kang
@@ -30,6 +38,7 @@ metadata:
     value: Placeholder link
   - key: Last site data update
     value: "2026-07-07"
+datePublished: "2026"
 linksHeading: Links
 links:
   - label: Paper PDF

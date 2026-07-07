@@ -5,7 +5,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultOutputFile = path.join(rootDir, "data", "leaderboard.json");
-const explanationLimit = 1200;
+const defaultDetailsDir = path.join(rootDir, "data", "leaderboard-details");
+const publicDetailsRoot = "/data/leaderboard-details";
+const explanationLimit = 6000;
 
 const metricConfigs = [
   {
@@ -287,12 +289,12 @@ function questionScopeForMetric(metric) {
   return metric.key === "endToEndIntent" || metric.key === "localIntent" ? "shared" : "byRun";
 }
 
-function choiceItems(context) {
+function choiceItems(context, limit = 600) {
   const choices = context?.choices;
   if (Array.isArray(choices)) {
     return choices.slice(0, 8).map((choice, index) => ({
       label: String.fromCharCode(65 + index),
-      text: trimText(choice, 260)
+      text: trimText(choice, limit)
     }));
   }
   if (choices && typeof choices === "object") {
@@ -300,10 +302,94 @@ function choiceItems(context) {
       .slice(0, 8)
       .map(([label, choice]) => ({
         label: String(label).toUpperCase(),
-        text: trimText(choice, 260)
+        text: trimText(choice, limit)
       }));
   }
   return [];
+}
+
+function compactChoiceCount(context) {
+  const choices = context?.choices;
+  if (Array.isArray(choices)) return choices.length;
+  if (choices && typeof choices === "object") return Object.keys(choices).length;
+  return 0;
+}
+
+function contextSection(title, value, limit = 3200) {
+  const text = trimText(value, limit);
+  return text ? { title, text } : null;
+}
+
+function contextSectionsForMetric(metric, context) {
+  const sections =
+    metric.key === "endToEndIntent"
+      ? [contextSection("Masked test", context?.masked_test, 3600)]
+      : metric.key === "endToEndEffect"
+        ? [contextSection("Generated test", context?.test_content, 3600)]
+        : [
+            contextSection("Function before patch", context?.function_code_before_patch, 3200),
+            contextSection("Function parameters", context?.function_parameters_before_patch, 2200),
+            contextSection("Focused line", context?.line, 500),
+            contextSection("Question target", context?.before_or_after, 500)
+          ];
+  return sections.filter(Boolean);
+}
+
+function questionPreview(metric, context) {
+  const choiceCount = compactChoiceCount(context);
+  const choiceSummary = choiceCount ? `${choiceCount} answer choices.` : "Answer choices are unavailable.";
+
+  if (metric.key === "endToEndIntent") {
+    const count = maskedSlotCount(context?.masked_test);
+    const maskSummary = count > 1 ? `${count} masked expressions` : "1 masked expression";
+    return {
+      title: "Summary",
+      text: `Generated test fill-in question with ${maskSummary}. ${choiceSummary}`
+    };
+  }
+
+  if (metric.key === "endToEndEffect") {
+    return {
+      title: "Summary",
+      text: `Generated test outcome question. ${choiceSummary}`
+    };
+  }
+
+  return {
+    title: "Summary",
+    text: `Local question focused ${localQuestionTarget(context)}. ${choiceSummary}`
+  };
+}
+
+function maskedSlotCount(text) {
+  return String(text || "").match(/\[\[MASKED\b/g)?.length ?? 0;
+}
+
+function localQuestionTarget(context) {
+  const timing = trimText(context?.before_or_after, 32);
+  const line = trimText(context?.line, 120);
+  if (timing && line) return `${timing} the patch at ${line}`;
+  if (timing) return `${timing} the patch`;
+  if (line) return `at ${line}`;
+  return "at the focused program point";
+}
+
+function questionTextForMetric(metric, context = {}) {
+  switch (metric.key) {
+    case "endToEndIntent": {
+      const count = maskedSlotCount(context.masked_test);
+      const target = count > 1 ? `the ${count} masked expressions` : "the masked expression";
+      return `Based on the explanation, which option should replace ${target} in the generated test?`;
+    }
+    case "endToEndEffect":
+      return "Based on the explanation, which option describes the expected result of running the generated test?";
+    case "localIntent":
+      return `Based on the explanation, which option states the intended local value or property ${localQuestionTarget(context)}?`;
+    case "localEffect":
+      return `Based on the explanation, which option states the local effect ${localQuestionTarget(context)}?`;
+    default:
+      return "Which option is supported by the explanation and context?";
+  }
 }
 
 function buildQuestionInstances(metric, contexts, groundTruths) {
@@ -312,12 +398,23 @@ function buildQuestionInstances(metric, contexts, groundTruths) {
     [...ids].sort().map((instanceId) => {
       const context = contexts?.[instanceId] ?? {};
       const groundTruth = groundTruths?.[instanceId] ?? null;
+      const preview = questionPreview(metric, context);
       return [
         instanceId,
         {
-          expected: expectedDisplay(metric, groundTruth),
-          choices: choiceItems(context),
-          contextSections: []
+          summary: {
+            questionText: questionTextForMetric(metric, context),
+            expected: expectedDisplay(metric, groundTruth),
+            previewTitle: preview.title,
+            previewText: preview.text,
+            choiceCount: compactChoiceCount(context)
+          },
+          detail: {
+            questionText: questionTextForMetric(metric, context),
+            expected: expectedDisplay(metric, groundTruth),
+            choices: choiceItems(context),
+            contextSections: contextSectionsForMetric(metric, context)
+          }
         }
       ];
     })
@@ -519,7 +616,27 @@ function instanceTitle(instanceId) {
   return String(instanceId).replace("__", " / ");
 }
 
-function buildInstances(row, generations, explanations) {
+function safeSegment(value) {
+  return String(value).replace(/[^A-Za-z0-9_.-]+/g, "_");
+}
+
+function instanceDetailPath(runId, instanceId) {
+  return `${publicDetailsRoot}/${safeSegment(runId)}/${safeSegment(instanceId)}.json`;
+}
+
+function questionDetailPath(runId, instanceId, metricKey) {
+  return `${publicDetailsRoot}/${safeSegment(runId)}/${safeSegment(instanceId)}/${safeSegment(metricKey)}.json`;
+}
+
+function detailRelativePath(publicPath) {
+  return publicPath.replace(/^\/data\//, "");
+}
+
+function questionRecordFor(questionBank, runId, instanceId, metricKey) {
+  return questionBank.shared?.[metricKey]?.[instanceId] ?? questionBank.byRun?.[runId]?.[metricKey]?.[instanceId] ?? null;
+}
+
+function buildInstances(row, generations, explanations, questionBank) {
   const instanceIds = new Set();
   for (const metric of metricConfigs) {
     for (const mode of ["base", "audit"]) {
@@ -527,7 +644,9 @@ function buildInstances(row, generations, explanations) {
     }
   }
 
-  return [...instanceIds]
+  const detailFiles = [];
+  const questionDetailFiles = [];
+  const summaries = [...instanceIds]
     .sort((a, b) => instanceTitle(a).localeCompare(instanceTitle(b)))
     .map((instanceId) => {
       const metricResults = Object.fromEntries(
@@ -535,9 +654,10 @@ function buildInstances(row, generations, explanations) {
       );
       const baseScore = aggregateInstanceScore(metricResults, "base");
       const auditScore = aggregateInstanceScore(metricResults, "audit");
-      return {
+      const summary = {
         id: instanceId,
         title: instanceTitle(instanceId),
+        detailPath: instanceDetailPath(row.id, instanceId),
         scores: {
           base: baseScore,
           audit: auditScore
@@ -546,14 +666,71 @@ function buildInstances(row, generations, explanations) {
         passed: {
           base: aggregatePassed(metricResults, "base"),
           audit: aggregatePassed(metricResults, "audit")
-        },
-        metrics: metricResults,
-        explanation: {
-          base: explanationFor(explanations.base, row.id, instanceId),
-          audit: explanationFor(explanations.audit, row.id, instanceId)
         }
       };
+
+      const questions = metricConfigs.map((metric) => {
+        const questionRecord = questionRecordFor(questionBank, row.id, instanceId, metric.key);
+        const detailsPath = questionDetailPath(row.id, instanceId, metric.key);
+        questionDetailFiles.push({
+          path: detailRelativePath(detailsPath),
+          data: {
+            metricKey: metric.key,
+            metricLabel: metric.label,
+            ...(questionRecord?.detail ?? {
+              questionText: questionTextForMetric(metric),
+              expected: "n/a",
+              choices: [],
+              contextSections: []
+            })
+          }
+        });
+        return {
+          metric: {
+            key: metric.key,
+            label: metric.label,
+            shortLabel: metric.shortLabel,
+            icon: metric.icon,
+            format: "decimal"
+          },
+          result: metricResults[metric.key],
+          question: {
+            ...(questionRecord?.summary ?? {
+              questionText: questionTextForMetric(metric),
+              expected: "n/a",
+              previewTitle: "Question context",
+              previewText: "No question context is available.",
+              choiceCount: 0
+            }),
+            detailsPath
+          }
+        };
+      });
+
+      detailFiles.push({
+        path: detailRelativePath(summary.detailPath),
+        data: {
+          id: instanceId,
+          title: summary.title,
+          scores: summary.scores,
+          delta: summary.delta,
+          passed: summary.passed,
+          questions,
+          explanation: {
+            base: explanationFor(explanations.base, row.id, instanceId),
+            audit: explanationFor(explanations.audit, row.id, instanceId)
+          }
+        }
+      });
+
+      return summary;
     });
+
+  return {
+    summaries,
+    detailFiles,
+    questionDetailFiles
+  };
 }
 
 function metricScoresForRow(row, mode) {
@@ -565,6 +742,7 @@ function buildLeaderboard({ rows, generations, questionBank, explanations, repos
   const completeRows = rows.filter((row) => metricKeys.every((key) => Number.isFinite(row.metrics[key]?.base?.score)));
   const includedRows = completeRows.length > 0 ? completeRows : rows;
   const skippedIncomplete = completeRows.length > 0 ? rows.length - completeRows.length : 0;
+  const detailFiles = [];
 
   const agents = includedRows
     .map((row) => {
@@ -588,6 +766,8 @@ function buildLeaderboard({ rows, generations, questionBank, explanations, repos
           Number.isFinite(baseScores[key]) && Number.isFinite(auditScores[key]) ? roundScore(auditScores[key] - baseScores[key]) : null
         ])
       );
+      const instanceRecords = buildInstances(row, generations.get(row.id), explanations, questionBank);
+      detailFiles.push(...instanceRecords.detailFiles, ...instanceRecords.questionDetailFiles);
 
       return {
         id: row.id,
@@ -600,7 +780,7 @@ function buildLeaderboard({ rows, generations, questionBank, explanations, repos
         deltas,
         explanationScore: baseExplanationScore,
         ...baseMetricScores,
-        instances: buildInstances(row, generations.get(row.id), explanations),
+        instances: instanceRecords.summaries,
         sourceFiles: [...new Set(row.sourceFiles)].sort()
       };
     })
@@ -610,7 +790,7 @@ function buildLeaderboard({ rows, generations, questionBank, explanations, repos
   const skippedNote =
     skippedIncomplete > 0 ? ` ${skippedIncomplete} incomplete agent row${skippedIncomplete === 1 ? " was" : "s were"} omitted.` : "";
 
-  return {
+  const leaderboard = {
     datasetLabel: `${repository} ${evaluationPath}${commitLabel}`,
     source: {
       repository,
@@ -641,7 +821,8 @@ function buildLeaderboard({ rows, generations, questionBank, explanations, repos
         icon: metric.icon
       }))
     ],
-    questions: questionBank,
+    detailsRoot: publicDetailsRoot,
+    detailVersion: new Date().toISOString(),
     agents,
     methodology: {
       title: "Methodology",
@@ -652,6 +833,11 @@ function buildLeaderboard({ rows, generations, questionBank, explanations, repos
       title: "Update policy",
       body: `Scores refresh from ${repository}/${evaluationPath} whenever the site is rebuilt. Rows require all four base explanation metrics.${skippedNote}`
     }
+  };
+
+  return {
+    leaderboard,
+    detailFiles
   };
 }
 
@@ -671,6 +857,7 @@ export async function prepareLeaderboardData(options = {}) {
   const evaluationPath = String(options.resultsPath ?? process.env.EXPLAINBENCH_RESULTS_PATH ?? "results/evaluation").replace(/\/+$/, "");
   const generationPath = String(options.generationPath ?? process.env.EXPLAINBENCH_GENERATION_RESULTS_PATH ?? generationPathFromEvaluationPath(evaluationPath)).replace(/\/+$/, "");
   const outputFile = options.outputFile ?? defaultOutputFile;
+  const detailsDir = options.detailsDir ?? defaultDetailsDir;
   const apiBase = `https://api.github.com/repos/${owner}/${name}`;
   const rawBase = `https://raw.githubusercontent.com/${owner}/${name}/${encodeURIComponent(ref)}`;
 
@@ -690,7 +877,7 @@ export async function prepareLeaderboardData(options = {}) {
     fetchExplanationBundle(apiBase, ref)
   ]);
 
-  const leaderboard = buildLeaderboard({
+  const { leaderboard, detailFiles } = buildLeaderboard({
     rows,
     generations,
     questionBank,
@@ -704,10 +891,19 @@ export async function prepareLeaderboardData(options = {}) {
 
   await fs.mkdir(path.dirname(outputFile), { recursive: true });
   await fs.writeFile(outputFile, `${JSON.stringify(leaderboard, null, 2)}\n`);
+  await fs.rm(detailsDir, { force: true, recursive: true });
+  await fs.mkdir(detailsDir, { recursive: true });
+  await Promise.all(
+    detailFiles.map(async (detail) => {
+      const file = path.join(path.dirname(outputFile), detail.path);
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, `${JSON.stringify(detail.data)}\n`);
+    })
+  );
 
   console.log(
     `Prepared ${path.relative(rootDir, outputFile)} from ${slug}/${evaluationPath}` +
-      ` (${leaderboard.agents.length} agents${commitSha ? `, ${commitSha.slice(0, 7)}` : ""}).`
+      ` (${leaderboard.agents.length} agents, ${detailFiles.length} detail files${commitSha ? `, ${commitSha.slice(0, 7)}` : ""}).`
   );
 }
 

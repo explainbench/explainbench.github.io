@@ -1,6 +1,8 @@
 import {
   Activity,
+  ArrowDownWideNarrow,
   ArrowLeft,
+  ArrowUp,
   Award,
   BarChart3,
   Box,
@@ -40,7 +42,9 @@ const hydrators = {
 
 const lucideIcons = {
   Activity,
+  ArrowDownWideNarrow,
   ArrowLeft,
+  ArrowUp,
   Award,
   BarChart3,
   Box,

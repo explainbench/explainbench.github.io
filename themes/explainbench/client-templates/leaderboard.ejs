@@ -30,7 +30,7 @@
             <th scope="col"<% if (metric.key === activeKey) { %> aria-sort="descending"<% } %>>
               <button class="sort-header <%= metric.key === activeKey ? 'is-active' : '' %>" type="button" data-sort-metric="<%= metric.key %>">
                 <span><%= metric.shortLabel %></span>
-                <span class="sort-indicator" aria-hidden="true">v</span>
+                <span class="sort-indicator" aria-hidden="true"><%- icon('arrow-down-wide-narrow') %></span>
               </button>
             </th>
           <% } %>
@@ -55,9 +55,9 @@
             </td>
             <% for (const metric of metrics) { const value = scoreValue(agent, metric.key, scoreMode); const delta = scoreDelta(agent, metric.key); %>
               <td class="score-cell">
-                <span class="score-number <%= scoreMode === 'audit' ? 'is-audit' : '' %>"><%= formatScore(value, metric.format) %></span>
+                <span class="score-number <%= scoreMode === 'audit' ? 'is-audit' : '' %> <%= animateScores ? 'is-score-animated' : '' %>"><%= formatScore(value, metric.format) %></span>
                 <% if (scoreMode === 'audit' && Number.isFinite(delta)) { %>
-                  <span class="score-delta <%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></span>
+                  <span class="score-delta <%= animateScores ? 'is-score-animated' : '' %> <%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></span>
                 <% } %>
                 <span class="score-bar" aria-hidden="true"><span style="--score: <%= Math.max(0, Math.min(100, value * 100)).toFixed(3) %>%"></span></span>
               </td>
@@ -79,9 +79,9 @@
         <% for (const metric of metrics) { const value = scoreValue(selectedAgent, metric.key, scoreMode); const delta = scoreDelta(selectedAgent, metric.key); %>
           <span class="agent-score-pill">
             <span><%= metric.shortLabel %></span>
-            <strong class="<%= scoreMode === 'audit' ? 'is-audit' : '' %>"><%= formatScore(value, metric.format) %></strong>
+            <strong class="<%= scoreMode === 'audit' ? 'is-audit' : '' %> <%= animateScores ? 'is-score-animated' : '' %>"><%= formatScore(value, metric.format) %></strong>
             <% if (scoreMode === 'audit' && Number.isFinite(delta)) { %>
-              <em class="<%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></em>
+              <em class="<%= animateScores ? 'is-score-animated' : '' %> <%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></em>
             <% } %>
           </span>
         <% } %>
@@ -101,80 +101,126 @@
                 <span class="instance-title"><%= instance.title %></span>
                 <span class="instance-status <%= statusClass(instance, scoreMode) %>"><%= passLabel(stat) %></span>
               </span>
-              <span class="instance-row-score <%= scoreMode === 'audit' ? 'is-audit' : '' %>"><%= Number.isFinite(value) ? formatScore(value, 'decimal') : 'n/a' %></span>
+              <span class="instance-row-score-wrap">
+                <span class="instance-row-score <%= scoreMode === 'audit' ? 'is-audit' : '' %> <%= animateScores ? 'is-score-animated' : '' %>"><%= Number.isFinite(value) ? formatScore(value, 'decimal') : 'n/a' %></span>
+                <% if (scoreMode === 'audit' && Number.isFinite(instance.delta)) { %>
+                  <span class="instance-row-delta <%= animateScores ? 'is-score-animated' : '' %> <%= instance.delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(instance.delta) %></span>
+                <% } %>
+              </span>
             </button>
           <% }) %>
         </div>
       </aside>
 
       <article class="instance-detail">
-        <header class="instance-detail-head">
-          <div>
-            <span class="agent-view-kicker">Instance</span>
-            <h3><%= selectedInstance?.title %></h3>
+        <% if (!selectedInstance) { %>
+          <div class="detail-empty">
+            <span class="agent-view-kicker">Instance detail</span>
+            <h3>Select an instance</h3>
+            <p>Choose an instance from the list to load its explanation excerpt and question audit details.</p>
           </div>
-          <span class="instance-summary <%= statusClass(selectedInstance, scoreMode) %>"><%= passLabel(selectedInstance?.passed?.[scoreMode]) %></span>
-        </header>
+        <% } else { %>
+          <header class="instance-detail-head">
+            <div>
+              <span class="agent-view-kicker">Instance</span>
+              <h3><%= selectedInstance.title %></h3>
+            </div>
+            <span class="instance-summary <%= statusClass(selectedInstance, scoreMode) %>"><%= passLabel(selectedInstance.passed?.[scoreMode]) %></span>
+          </header>
 
-        <section class="explanation-panel">
-          <div class="detail-section-head">
-            <h4><%= selectedExplanation.label %></h4>
-            <% if (selectedExplanation.truncated) { %>
-              <span>Excerpt</span>
-            <% } %>
-          </div>
-          <pre class="explanation-text"><%= selectedExplanation.text %></pre>
-        </section>
+          <% if (detailLoading) { %>
+            <div class="detail-empty">
+              <span class="agent-view-kicker">Loading</span>
+              <h3>Fetching instance detail</h3>
+              <p>Explanation and question details are loaded on demand.</p>
+            </div>
+          <% } else if (detailError) { %>
+            <div class="detail-empty is-error">
+              <span class="agent-view-kicker">Error</span>
+              <h3>Instance detail did not load</h3>
+              <p><%= detailError %></p>
+            </div>
+          <% } else if (selectedInstanceDetail) { %>
+            <section class="explanation-panel">
+              <div class="detail-section-head">
+                <h4><%= selectedExplanation.label %></h4>
+                <% if (selectedExplanation.truncated) { %>
+                  <span>Excerpt</span>
+                <% } %>
+              </div>
+              <div class="explanation-text markdown-view"><%- markdownToHtml(selectedExplanation.text) %></div>
+            </section>
 
-        <div class="qa-grid">
-          <% selectedQuestions.forEach((item) => { const metric = item.metric; const result = item.result; const question = item.question; const stat = result?.passed?.[scoreMode]; const score = result?.scores?.[scoreMode]; const baseScore = result?.scores?.base; const auditScore = result?.scores?.audit; const delta = Number.isFinite(baseScore) && Number.isFinite(auditScore) ? auditScore - baseScore : null; %>
-            <article class="qa-card <%= statusClass(result, scoreMode) %>">
-              <header class="qa-card-head">
-                <span class="qa-title"><%- icon(metric.icon) %> <%= metric.shortLabel %></span>
-                <span class="qa-score">
-                  <strong class="<%= scoreMode === 'audit' ? 'is-audit' : '' %>"><%= Number.isFinite(score) ? formatScore(score, metric.format) : 'n/a' %></strong>
-                  <span><%= passLabel(stat) %></span>
-                  <% if (scoreMode === 'audit' && Number.isFinite(delta)) { %>
-                    <em class="<%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></em>
+            <div class="qa-grid">
+              <% selectedQuestions.forEach((item) => { const metric = item.metric; const result = item.result; const question = item.question; const stat = result?.passed?.[scoreMode]; const score = result?.scores?.[scoreMode]; const baseScore = result?.scores?.base; const auditScore = result?.scores?.audit; const delta = Number.isFinite(baseScore) && Number.isFinite(auditScore) ? auditScore - baseScore : null; const expanded = expandedQuestionKey === metric.key; const detail = expanded ? questionDetail : null; %>
+                <article class="qa-card <%= statusClass(result, scoreMode) %> <%= expanded ? 'is-expanded' : '' %>" role="button" tabindex="0" data-toggle-question-key="<%= metric.key %>">
+                  <header class="qa-card-head">
+                    <span class="qa-title"><%- icon(metric.icon) %> <%= metric.shortLabel %></span>
+                    <span class="qa-score">
+                      <strong class="<%= scoreMode === 'audit' ? 'is-audit' : '' %> <%= animateScores ? 'is-score-animated' : '' %>"><%= Number.isFinite(score) ? formatScore(score, metric.format) : 'n/a' %></strong>
+                      <span><%= passLabel(stat) %></span>
+                      <% if (scoreMode === 'audit' && Number.isFinite(delta)) { %>
+                        <em class="<%= animateScores ? 'is-score-animated' : '' %> <%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></em>
+                      <% } %>
+                    </span>
+                  </header>
+
+                  <div class="answer-line">
+                    <span>Expected</span>
+                    <strong><%= question?.expected || 'n/a' %></strong>
+                  </div>
+
+                  <div class="question-prompt">
+                    <span>Question</span>
+                    <p><%= question?.questionText || 'Question detail is unavailable.' %></p>
+                  </div>
+
+                  <div class="qa-expand-hint"><%= expanded ? 'Click to hide details' : 'Click to show details' %></div>
+
+                  <div class="attempt-list">
+                    <% (result?.attempts?.[scoreMode] || []).forEach((attempt) => { %>
+                      <span class="attempt-chip <%= attemptClass(attempt) %>" title="<%= attempt.correct === true ? 'Correct' : attempt.correct === false ? 'Incorrect' : 'Not scored' %>">
+                        <span>#<%= attempt.run %></span>
+                        <strong><%= attempt.answer %></strong>
+                      </span>
+                    <% }) %>
+                  </div>
+
+                  <% if (expanded) { %>
+                    <div class="qa-expanded">
+                      <% if (questionLoading) { %>
+                        <p class="detail-loading">Loading question details...</p>
+                      <% } else if (questionError) { %>
+                        <p class="detail-loading is-error"><%= questionError %></p>
+                      <% } else if (detail) { %>
+                        <% if (detail.choices?.length) { %>
+                          <div class="qa-choice-list">
+                            <% detail.choices.forEach((choice) => { %>
+                              <span><strong><%= choice.label %></strong><%= choice.text %></span>
+                            <% }) %>
+                          </div>
+                        <% } %>
+
+                        <% if (detail.contextSections?.length) { %>
+                          <div class="context-details">
+                            <% detail.contextSections.forEach((section) => { %>
+                              <h5><%= section.title %></h5>
+                              <pre><%= section.text %></pre>
+                            <% }) %>
+                          </div>
+                        <% } %>
+                      <% } %>
+                    </div>
                   <% } %>
-                </span>
-              </header>
-
-              <div class="answer-line">
-                <span>Expected</span>
-                <strong><%= question?.expected || 'n/a' %></strong>
-              </div>
-
-              <div class="attempt-list">
-                <% (result?.attempts?.[scoreMode] || []).forEach((attempt) => { %>
-                  <span class="attempt-chip <%= attemptClass(attempt) %>" title="<%= attempt.correct === true ? 'Correct' : attempt.correct === false ? 'Incorrect' : 'Not scored' %>">
-                    <span>#<%= attempt.run %></span>
-                    <strong><%= attempt.answer %></strong>
-                  </span>
-                <% }) %>
-              </div>
-
-              <% if (question?.choices?.length) { %>
-                <div class="qa-choice-list">
-                  <% question.choices.forEach((choice) => { %>
-                    <span><strong><%= choice.label %></strong><%= choice.text %></span>
-                  <% }) %>
-                </div>
-              <% } %>
-
-              <% if (question?.contextSections?.length) { %>
-                <details class="context-details">
-                  <summary>Context</summary>
-                  <% question.contextSections.forEach((section) => { %>
-                    <h5><%= section.title %></h5>
-                    <pre><%= section.text %></pre>
-                  <% }) %>
-                </details>
-              <% } %>
-            </article>
-          <% }) %>
-        </div>
+                </article>
+              <% }) %>
+            </div>
+          <% } %>
+        <% } %>
       </article>
     </div>
+    <button class="agent-top-button" type="button" data-agent-top aria-label="Back to top" title="Back to top">
+      <%- icon('arrow-up') %>
+    </button>
   </section>
 <% } %>

@@ -18,5 +18,3 @@ blocks:
   - template: leaderboard
     data: leaderboard
 ---
-
-The leaderboard is generated at build time from the `results/evaluation` files in [explainbench/explainbench](https://github.com/explainbench/explainbench).

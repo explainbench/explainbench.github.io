@@ -1,50 +1,180 @@
+<%
+  const activeKey = activeMetric?.key;
+  const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
+%>
 <div class="leaderboard-toolbar">
-  <div class="metric-buttons" role="tablist" aria-label="Leaderboard metric">
-    <% for (const metric of metrics) { %>
-      <button class="metric-button <%= metric.key === activeMetric?.key ? 'is-active' : '' %>" type="button" data-metric="<%= metric.key %>">
-        <%- icon(metric.icon) %><span><%= metric.label %></span>
-      </button>
-    <% } %>
-  </div>
+  <% if (selectedAgent) { %>
+    <button class="leaderboard-back" type="button" data-leaderboard-back>
+      <%- icon('arrow-left') %>
+      <span>Leaderboard</span>
+    </button>
+  <% } %>
   <span class="asset-badge"><%- icon('database') %> <%= leaderboard.datasetLabel %></span>
+  <% if (auditAvailable) { %>
+    <label class="audit-toggle">
+      <input type="checkbox" data-audit-toggle <%= scoreMode === 'audit' ? 'checked' : '' %>>
+      <span>Base</span>
+      <span>Audit</span>
+    </label>
+  <% } %>
 </div>
-<div class="leaderboard-table-wrap">
-  <table class="leaderboard-table">
-    <thead>
-      <tr>
-        <th scope="col">Rank</th>
-        <th scope="col">Agent</th>
-        <% for (const metric of metrics) { %><th scope="col"><%= metric.shortLabel %></th><% } %>
-        <th scope="col">Notes</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% agents.forEach((agent, index) => { %>
+
+<% if (!selectedAgent) { %>
+  <div class="leaderboard-table-wrap">
+    <table class="leaderboard-table">
+      <thead>
         <tr>
-          <td><span class="rank"><%= index + 1 %></span></td>
-          <td class="agent-cell">
-            <span class="agent-name"><%= agent.agent %></span>
-            <span class="agent-note"><%= agent.framework %></span>
-          </td>
-          <% for (const metric of metrics) { const value = Number(agent[metric.key] ?? 0); %>
-            <td class="score-cell">
-              <span class="score-number"><%= formatScore(value, metric.format) %></span>
-              <span class="score-bar" aria-hidden="true"><span style="--score: <%= Math.max(0, Math.min(100, value * 100)).toFixed(3) %>%"></span></span>
-            </td>
+          <th scope="col">Rank</th>
+          <th scope="col">Agent</th>
+          <% for (const metric of metrics) { %>
+            <th scope="col"<% if (metric.key === activeKey) { %> aria-sort="descending"<% } %>>
+              <button class="sort-header <%= metric.key === activeKey ? 'is-active' : '' %>" type="button" data-sort-metric="<%= metric.key %>">
+                <span><%= metric.shortLabel %></span>
+                <span class="sort-indicator" aria-hidden="true">v</span>
+              </button>
+            </th>
           <% } %>
-          <td><%= agent.note %></td>
         </tr>
-      <% }) %>
-    </tbody>
-  </table>
-</div>
-<div class="leaderboard-notes">
-  <article class="card content-card">
-    <h3><%= leaderboard.methodology.title %></h3>
-    <p><%= leaderboard.methodology.body %></p>
-  </article>
-  <article class="card content-card">
-    <h3><%= leaderboard.updatePolicy.title %></h3>
-    <p><%= leaderboard.updatePolicy.body %></p>
-  </article>
-</div>
+      </thead>
+      <tbody>
+        <% agents.forEach((agent, index) => { %>
+          <tr class="leaderboard-row" data-open-agent-id="<%= agent.id %>" role="button" tabindex="0" aria-label="Open <%= agent.agent %> details">
+            <td>
+              <span class="rank <%= index < 3 ? `rank-medal ${rankClasses[index]}` : '' %>">
+                <% if (index < 3) { %>
+                  <%- icon('medal') %>
+                  <span class="rank-number"><%= index + 1 %></span>
+                <% } else { %>
+                  <%= index + 1 %>
+                <% } %>
+              </span>
+            </td>
+            <td class="agent-cell">
+              <span class="agent-name"><%= agent.agent %></span>
+              <span class="agent-note"><%= agent.framework %></span>
+            </td>
+            <% for (const metric of metrics) { const value = scoreValue(agent, metric.key, scoreMode); const delta = scoreDelta(agent, metric.key); %>
+              <td class="score-cell">
+                <span class="score-number <%= scoreMode === 'audit' ? 'is-audit' : '' %>"><%= formatScore(value, metric.format) %></span>
+                <% if (scoreMode === 'audit' && Number.isFinite(delta)) { %>
+                  <span class="score-delta <%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></span>
+                <% } %>
+                <span class="score-bar" aria-hidden="true"><span style="--score: <%= Math.max(0, Math.min(100, value * 100)).toFixed(3) %>%"></span></span>
+              </td>
+            <% } %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <section class="agent-view">
+    <header class="agent-view-head">
+      <div class="agent-view-title">
+        <span class="agent-view-kicker">Per-agent view</span>
+        <h3><%= selectedAgent.agent %></h3>
+        <p><%= selectedAgent.framework %></p>
+      </div>
+      <div class="agent-score-strip" aria-label="Agent scores">
+        <% for (const metric of metrics) { const value = scoreValue(selectedAgent, metric.key, scoreMode); const delta = scoreDelta(selectedAgent, metric.key); %>
+          <span class="agent-score-pill">
+            <span><%= metric.shortLabel %></span>
+            <strong class="<%= scoreMode === 'audit' ? 'is-audit' : '' %>"><%= formatScore(value, metric.format) %></strong>
+            <% if (scoreMode === 'audit' && Number.isFinite(delta)) { %>
+              <em class="<%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></em>
+            <% } %>
+          </span>
+        <% } %>
+      </div>
+    </header>
+
+    <div class="agent-view-grid">
+      <aside class="instance-list">
+        <div class="instance-list-head">
+          <span>Instances</span>
+          <strong><%= selectedAgent.instances.length %></strong>
+        </div>
+        <div class="instance-list-scroll">
+          <% selectedAgent.instances.forEach((instance) => { const stat = instance.passed?.[scoreMode]; const value = instance.scores?.[scoreMode]; const active = selectedInstance?.id === instance.id; %>
+            <button class="instance-row <%= active ? 'is-active' : '' %>" type="button" data-select-instance-id="<%= instance.id %>">
+              <span class="instance-row-main">
+                <span class="instance-title"><%= instance.title %></span>
+                <span class="instance-status <%= statusClass(instance, scoreMode) %>"><%= passLabel(stat) %></span>
+              </span>
+              <span class="instance-row-score <%= scoreMode === 'audit' ? 'is-audit' : '' %>"><%= Number.isFinite(value) ? formatScore(value, 'decimal') : 'n/a' %></span>
+            </button>
+          <% }) %>
+        </div>
+      </aside>
+
+      <article class="instance-detail">
+        <header class="instance-detail-head">
+          <div>
+            <span class="agent-view-kicker">Instance</span>
+            <h3><%= selectedInstance?.title %></h3>
+          </div>
+          <span class="instance-summary <%= statusClass(selectedInstance, scoreMode) %>"><%= passLabel(selectedInstance?.passed?.[scoreMode]) %></span>
+        </header>
+
+        <section class="explanation-panel">
+          <div class="detail-section-head">
+            <h4><%= selectedExplanation.label %></h4>
+            <% if (selectedExplanation.truncated) { %>
+              <span>Excerpt</span>
+            <% } %>
+          </div>
+          <pre class="explanation-text"><%= selectedExplanation.text %></pre>
+        </section>
+
+        <div class="qa-grid">
+          <% selectedQuestions.forEach((item) => { const metric = item.metric; const result = item.result; const question = item.question; const stat = result?.passed?.[scoreMode]; const score = result?.scores?.[scoreMode]; const baseScore = result?.scores?.base; const auditScore = result?.scores?.audit; const delta = Number.isFinite(baseScore) && Number.isFinite(auditScore) ? auditScore - baseScore : null; %>
+            <article class="qa-card <%= statusClass(result, scoreMode) %>">
+              <header class="qa-card-head">
+                <span class="qa-title"><%- icon(metric.icon) %> <%= metric.shortLabel %></span>
+                <span class="qa-score">
+                  <strong class="<%= scoreMode === 'audit' ? 'is-audit' : '' %>"><%= Number.isFinite(score) ? formatScore(score, metric.format) : 'n/a' %></strong>
+                  <span><%= passLabel(stat) %></span>
+                  <% if (scoreMode === 'audit' && Number.isFinite(delta)) { %>
+                    <em class="<%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= formatDelta(delta) %></em>
+                  <% } %>
+                </span>
+              </header>
+
+              <div class="answer-line">
+                <span>Expected</span>
+                <strong><%= question?.expected || 'n/a' %></strong>
+              </div>
+
+              <div class="attempt-list">
+                <% (result?.attempts?.[scoreMode] || []).forEach((attempt) => { %>
+                  <span class="attempt-chip <%= attemptClass(attempt) %>" title="<%= attempt.correct === true ? 'Correct' : attempt.correct === false ? 'Incorrect' : 'Not scored' %>">
+                    <span>#<%= attempt.run %></span>
+                    <strong><%= attempt.answer %></strong>
+                  </span>
+                <% }) %>
+              </div>
+
+              <% if (question?.choices?.length) { %>
+                <div class="qa-choice-list">
+                  <% question.choices.forEach((choice) => { %>
+                    <span><strong><%= choice.label %></strong><%= choice.text %></span>
+                  <% }) %>
+                </div>
+              <% } %>
+
+              <% if (question?.contextSections?.length) { %>
+                <details class="context-details">
+                  <summary>Context</summary>
+                  <% question.contextSections.forEach((section) => { %>
+                    <h5><%= section.title %></h5>
+                    <pre><%= section.text %></pre>
+                  <% }) %>
+                </details>
+              <% } %>
+            </article>
+          <% }) %>
+        </div>
+      </article>
+    </div>
+  </section>
+<% } %>

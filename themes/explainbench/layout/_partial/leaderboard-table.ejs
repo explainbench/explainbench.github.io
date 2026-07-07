@@ -1,12 +1,19 @@
+<%
+  const activeKey = activeMetric?.key;
+  const currentMode = scoreMode || 'base';
+  const scoreFor = (agent, key) => Number(agent.scores?.[currentMode]?.[key] ?? agent[key] ?? 0);
+  const deltaFor = (agent, key) => agent.deltas?.[key];
+  const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
+%>
 <div class="leaderboard-toolbar">
-  <div class="metric-buttons" role="tablist" aria-label="Leaderboard metric">
-    <% for (const metric of metrics) { %>
-      <button class="metric-button <%= metric.key === activeMetric?.key ? 'is-active' : '' %>" type="button" data-metric="<%= metric.key %>">
-        <%- icon(metric.icon) %><span><%= metric.label %></span>
-      </button>
-    <% } %>
-  </div>
   <span class="asset-badge"><%- icon('database') %> <%= leaderboard.datasetLabel %></span>
+  <% if (leaderboard.auditAvailable) { %>
+    <label class="audit-toggle">
+      <input type="checkbox" data-audit-toggle <%= currentMode === 'audit' ? 'checked' : '' %>>
+      <span>Base</span>
+      <span>Audit</span>
+    </label>
+  <% } %>
 </div>
 <div class="leaderboard-table-wrap">
   <table class="leaderboard-table">
@@ -14,37 +21,44 @@
       <tr>
         <th scope="col">Rank</th>
         <th scope="col">Agent</th>
-        <% for (const metric of metrics) { %><th scope="col"><%= metric.shortLabel %></th><% } %>
-        <th scope="col">Notes</th>
+        <% for (const metric of metrics) { %>
+          <th scope="col"<% if (metric.key === activeKey) { %> aria-sort="descending"<% } %>>
+            <button class="sort-header <%= metric.key === activeKey ? 'is-active' : '' %>" type="button" data-sort-metric="<%= metric.key %>">
+              <span><%= metric.shortLabel %></span>
+              <span class="sort-indicator" aria-hidden="true">v</span>
+            </button>
+          </th>
+        <% } %>
       </tr>
     </thead>
     <tbody>
       <% agents.forEach((agent, index) => { %>
-        <tr>
-          <td><span class="rank"><%= index + 1 %></span></td>
+        <tr class="leaderboard-row" data-open-agent-id="<%= agent.id %>" role="button" tabindex="0" aria-label="Open <%= agent.agent %> details">
+          <td>
+            <span class="rank <%= index < 3 ? `rank-medal ${rankClasses[index]}` : '' %>">
+              <% if (index < 3) { %>
+                <%- icon('medal') %>
+                <span class="rank-number"><%= index + 1 %></span>
+              <% } else { %>
+                <%= index + 1 %>
+              <% } %>
+            </span>
+          </td>
           <td class="agent-cell">
             <span class="agent-name"><%= agent.agent %></span>
             <span class="agent-note"><%= agent.framework %></span>
           </td>
-          <% for (const metric of metrics) { const value = Number(agent[metric.key] ?? 0); %>
+          <% for (const metric of metrics) { const value = scoreFor(agent, metric.key); const delta = deltaFor(agent, metric.key); %>
             <td class="score-cell">
-              <span class="score-number"><%= format_score(value, metric.format) %></span>
+              <span class="score-number <%= currentMode === 'audit' ? 'is-audit' : '' %>"><%= format_score(value, metric.format) %></span>
+              <% if (currentMode === 'audit' && Number.isFinite(delta)) { %>
+                <span class="score-delta <%= delta >= 0 ? 'is-positive' : 'is-negative' %>"><%= `${delta >= 0 ? '+' : ''}${Number(delta).toFixed(3)}` %></span>
+              <% } %>
               <span class="score-bar" aria-hidden="true"><span style="--score: <%= Math.max(0, Math.min(100, value * 100)).toFixed(3) %>%"></span></span>
             </td>
           <% } %>
-          <td><%= agent.note %></td>
         </tr>
       <% }) %>
     </tbody>
   </table>
-</div>
-<div class="leaderboard-notes">
-  <article class="card content-card">
-    <h3><%= leaderboard.methodology.title %></h3>
-    <p><%= leaderboard.methodology.body %></p>
-  </article>
-  <article class="card content-card">
-    <h3><%= leaderboard.updatePolicy.title %></h3>
-    <p><%= leaderboard.updatePolicy.body %></p>
-  </article>
 </div>

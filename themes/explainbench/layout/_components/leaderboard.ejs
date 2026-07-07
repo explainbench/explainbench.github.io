@@ -4,7 +4,12 @@
   const metrics = leaderboard.metrics || [];
   const activeMetric = metrics[0];
   const metricKey = activeMetric?.key;
-  const agents = [...(leaderboard.agents || [])].sort((a, b) => Number(b[metricKey] ?? 0) - Number(a[metricKey] ?? 0));
+  const scoreMode = 'base';
+  const agents = [...(leaderboard.agents || [])].sort((a, b) => {
+    const aValue = Number(a.scores?.[scoreMode]?.[metricKey] ?? a[metricKey] ?? 0);
+    const bValue = Number(b.scores?.[scoreMode]?.[metricKey] ?? b[metricKey] ?? 0);
+    return bValue - aValue || String(a.agent || '').localeCompare(String(b.agent || ''));
+  });
 %>
 <% if (!isNested) { %>
   <section class="band compact-band">
@@ -12,7 +17,7 @@
 <% } %>
 <div data-component="leaderboard">
   <script type="application/json" data-leaderboard-json><%- script_json(leaderboard) %></script>
-  <%- partial('_partial/leaderboard-table', { leaderboard, metrics, activeMetric, agents }) %>
+  <%- partial('_partial/leaderboard-table', { leaderboard, metrics, activeMetric, scoreMode, agents }) %>
 </div>
 <% if (!isNested) { %>
     </div>

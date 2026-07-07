@@ -1,5 +1,6 @@
 import {
   Activity,
+  ArrowLeft,
   Award,
   BarChart3,
   Box,
@@ -12,6 +13,7 @@ import {
   GitCompareArrows,
   Github,
   Moon,
+  Medal,
   Sparkles,
   Sun,
   SunMoon,
@@ -38,6 +40,7 @@ const hydrators = {
 
 const lucideIcons = {
   Activity,
+  ArrowLeft,
   Award,
   BarChart3,
   Box,
@@ -50,6 +53,7 @@ const lucideIcons = {
   GitCompareArrows,
   Github,
   Moon,
+  Medal,
   Sparkles,
   Sun,
   SunMoon,

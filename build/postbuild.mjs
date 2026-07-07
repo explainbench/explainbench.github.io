@@ -63,7 +63,26 @@ async function generateClientTemplates() {
   const entries = [];
   const localNames = {
     "asset-error": ["title", "message", "errors"],
-    leaderboard: ["leaderboard", "metrics", "activeMetric", "agents", "icon", "formatScore"],
+    leaderboard: [
+      "leaderboard",
+      "metrics",
+      "activeMetric",
+      "agents",
+      "scoreMode",
+      "auditAvailable",
+      "selectedAgent",
+      "selectedInstance",
+      "selectedQuestions",
+      "selectedExplanation",
+      "icon",
+      "formatScore",
+      "formatDelta",
+      "scoreValue",
+      "scoreDelta",
+      "passLabel",
+      "statusClass",
+      "attemptClass"
+    ],
     "usage-demo": ["demo", "selected", "selectedIndex", "icon"]
   };
 
@@ -101,8 +120,11 @@ async function copyStaticAssets() {
   await fs.rm(dataTarget, { force: true, recursive: true });
   await fs.mkdir(dataTarget, { recursive: true });
   for (const file of await listFiles(dataSource, [".json"])) {
-    const parsed = JSON.parse(await fs.readFile(file, "utf8"));
     const relative = path.relative(dataSource, file);
+    if (toPosix(relative) === "leaderboard.json") {
+      continue;
+    }
+    const parsed = JSON.parse(await fs.readFile(file, "utf8"));
     await fs.mkdir(path.dirname(path.join(dataTarget, relative)), { recursive: true });
     await fs.writeFile(path.join(dataTarget, relative), `${JSON.stringify(parsed)}\n`);
   }

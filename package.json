@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "fetch:leaderboard": "node build/fetch-leaderboard-data.mjs",
     "build": "node build/build.mjs",
     "serve": "python3 -m http.server 4173 -d public"
   },

@@ -39,7 +39,6 @@ footer:
   right: "GitHub Pages-ready: bundled, minified, and deployed from CI."
 
 data_files:
-  leaderboard: /data/leaderboard.json
   demo: /data/demo-example.json
 
 skip_render:

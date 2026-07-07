@@ -28,7 +28,7 @@
           </td>
           <% for (const metric of metrics) { const value = Number(agent[metric.key] ?? 0); %>
             <td class="score-cell">
-              <span class="score-number"><%= formatScore(value, metric.format) %></span>
+              <span class="score-number"><%= format_score(value, metric.format) %></span>
               <span class="score-bar" aria-hidden="true"><span style="--score: <%= Math.max(0, Math.min(100, value * 100)).toFixed(3) %>%"></span></span>
             </td>
           <% } %>

@@ -19,4 +19,4 @@ blocks:
     data: leaderboard
 ---
 
-The leaderboard is generated from editable JSON so benchmark releases can update scores without rewriting the page template.
+The leaderboard is generated at build time from the `results/evaluation` files in [explainbench/explainbench](https://github.com/explainbench/explainbench).

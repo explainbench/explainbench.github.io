@@ -1,10 +1,18 @@
-<% const isNested = Boolean(typeof nested !== 'undefined' && nested); %>
+<%
+  const isNested = Boolean(typeof nested !== 'undefined' && nested);
+  const leaderboard = data_json(block.data || 'leaderboard');
+  const metrics = leaderboard.metrics || [];
+  const activeMetric = metrics[0];
+  const metricKey = activeMetric?.key;
+  const agents = [...(leaderboard.agents || [])].sort((a, b) => Number(b[metricKey] ?? 0) - Number(a[metricKey] ?? 0));
+%>
 <% if (!isNested) { %>
   <section class="band compact-band">
     <div class="inner">
 <% } %>
-<div data-component="leaderboard" data-data-key="<%= block.data %>">
-  <div class="component-loading">Loading leaderboard...</div>
+<div data-component="leaderboard">
+  <script type="application/json" data-leaderboard-json><%- script_json(leaderboard) %></script>
+  <%- partial('_partial/leaderboard-table', { leaderboard, metrics, activeMetric, agents }) %>
 </div>
 <% if (!isNested) { %>
     </div>

@@ -1,5 +1,10 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
+
+const dataCache = new Map();
+
 function esc(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -83,6 +88,28 @@ function breadcrumbItems(page = {}) {
   return items;
 }
 
+function dataJson(name) {
+  const key = String(name || '').replace(/\.json$/, '');
+  if (!/^[a-z0-9_-]+$/i.test(key)) {
+    throw new Error(`Invalid data file key: ${name}`);
+  }
+  if (dataCache.has(key)) return dataCache.get(key);
+
+  const filePath = path.join(hexo.base_dir || process.cwd(), 'data', `${key}.json`);
+  const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  dataCache.set(key, parsed);
+  return parsed;
+}
+
+function formatScore(value, format) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 'n/a';
+  if (format === 'percent') {
+    return `${Math.round(numeric * 1000) / 10}%`;
+  }
+  return numeric.toFixed(3);
+}
+
 hexo.extend.helper.register('md_inline', function mdInline(value) {
   const rendered = hexo.render.renderSync({ text: String(value ?? ''), engine: 'markdown' }).trim();
   return rendered.replace(/^<p>/, '').replace(/<\/p>$/, '');
@@ -116,6 +143,10 @@ hexo.extend.helper.register('content_section', function contentSection(content, 
     </section>
   `;
 });
+
+hexo.extend.helper.register('data_json', dataJson);
+
+hexo.extend.helper.register('format_score', formatScore);
 
 hexo.extend.helper.register('script_json', function scriptJson(value) {
   return JSON.stringify(value)

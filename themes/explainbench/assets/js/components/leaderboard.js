@@ -1,7 +1,18 @@
 import { renderClientTemplate } from "../../../../../.generated/client-templates.js";
 import { formatScore, icon } from "../html.js";
 
-export function hydrateLeaderboard(root, leaderboard, { refreshIcons } = {}) {
+function readEmbeddedLeaderboard(root) {
+  const node = root.querySelector("[data-leaderboard-json]");
+  if (!node?.textContent) return null;
+  try {
+    return JSON.parse(node.textContent);
+  } catch {
+    return null;
+  }
+}
+
+export function hydrateLeaderboard(root, providedLeaderboard, { refreshIcons } = {}) {
+  const leaderboard = providedLeaderboard ?? readEmbeddedLeaderboard(root);
   if (!leaderboard) {
     root.innerHTML = renderClientTemplate("asset-error", {
       title: "Leaderboard data is unavailable."
